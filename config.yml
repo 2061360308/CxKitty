@@ -34,7 +34,7 @@ video:
 # 作业 (章节测验)
 work:
   # 使能
-  enable: true
+  enable: false
   # 是否进行试题导出 可以将 `enable`设置为 false, 从而进行 dry run
   export: false
   # 完成等待时间

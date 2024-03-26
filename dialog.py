@@ -13,6 +13,7 @@ from cxapi.api import ChaoXingAPI
 from cxapi.classes import ClassContainer
 from cxapi.exam import ExamDto
 from cxapi.schema import ClassExamModule, ClassStatus, ExamStatus
+from web.utils import chaoxing_web_prompt
 from utils import (
     SessionModule,
     __version__,
@@ -22,6 +23,8 @@ from utils import (
     save_session
 )
 
+
+prompt_sleep = 1
 
 def logo(tui_ctx: Console) -> None:
     "显示项目logo"
@@ -58,10 +61,25 @@ def accinfo(tui_ctx: Console, api: ChaoXingAPI) -> None:
     )
 
 
-def login(tui_ctx: Console, api: ChaoXingAPI):
+def login(process, tui_ctx: Console, api: ChaoXingAPI):
     "交互-登录账号"
     while True:
-        uname = Prompt.ask("[yellow]请输入手机号, 留空为二维码登录[/]", console=tui_ctx)
+
+        # 进入正式循环前首先判断该进程是否已经结束
+        if not process.alive:
+            process.exit()
+
+        while True:
+            # print(process.process_id, "等待输入")
+            uname = chaoxing_web_prompt.ask(
+                "[yellow]请输入手机号, 留空为二维码登录[/]",
+                console=tui_ctx)
+            if uname is not None:
+                break
+            time.sleep(prompt_sleep)
+
+        # uname = Prompt.ask("[yellow]请输入手机号, 留空为二维码登录[/]", console=tui_ctx)
+
         tui_ctx.print('')
         # 二维码登录
         if uname == "":
@@ -96,10 +114,24 @@ def login(tui_ctx: Console, api: ChaoXingAPI):
                 time.sleep(1.0)
         # 手机号+密码登录
         else:
-            passwd = Prompt.ask("[yellow]请输入密码 (内容隐藏)", password=True, console=tui_ctx)
+
+            while True:
+                # print(process.process_id, "等待输入")
+                passwd = chaoxing_web_prompt.ask(
+                    "[yellow]请输入密码 (内容隐藏)",
+                    console=tui_ctx)
+                if passwd is not None:
+                    break
+                time.sleep(prompt_sleep)
+
+            # passwd = Prompt.ask("[yellow]请输入密码 (内容隐藏)", password=True, console=tui_ctx)
+
             tui_ctx.print('')
             status, result = api.login_passwd(uname, passwd)
             if status:
+
+                process.phone = uname  # 更新进程的手机号
+
                 tui_ctx.print("[green]登录成功")
                 tui_ctx.print(result)
                 api.accinfo()
@@ -107,6 +139,7 @@ def login(tui_ctx: Console, api: ChaoXingAPI):
                 return
             else:
                 tui_ctx.print("[red]登录失败")
+
 
 def relogin(tui_ctx: Console, session: SessionModule, api: ChaoXingAPI):
     "重新登录账号"
@@ -126,8 +159,12 @@ def relogin(tui_ctx: Console, session: SessionModule, api: ChaoXingAPI):
     else:
         tui_ctx.print("[red]找不到密码, 无法重登")
 
-def select_session(tui_ctx: Console, sessions: list[SessionModule], api: ChaoXingAPI):
+
+def select_session(process, tui_ctx: Console, sessions: list[SessionModule], api: ChaoXingAPI):
     "交互-选择会话"
+
+    # Todo: 重新优化逻辑一直复制粘贴代码的话太乱了
+
     tb = Table("序号", "手机号", "puid", "姓名", title="请选择欲读档的会话")
     for index, session in enumerate(sessions):
         tb.add_row(
@@ -138,19 +175,36 @@ def select_session(tui_ctx: Console, sessions: list[SessionModule], api: ChaoXin
         )
     tui_ctx.print(tb)
     while True:
-        inp = Prompt.ask("输入会话序号选择 ([yellow]序号后加r重登[/]), 留空登录新账号, 退出输入 [yellow]q[/]", console=tui_ctx)
+
+        # 进入正式循环前首先判断该进程是否已经结束
+        if not process.alive:
+            process.exit()
+
+        # inp = Prompt.ask("输入会话序号选择 ([yellow]序号后加r重登[/]), 留空登录新账号, 退出输入 [yellow]q[/]",
+        #                  console=tui_ctx)
+
+        while True:
+            # print(process.process_id, "等待输入")
+            inp = chaoxing_web_prompt.ask(
+                "输入会话序号选择 ([yellow]序号后加r重登[/]), 留空登录新账号, 退出输入 [yellow]q[/]",
+                console=tui_ctx)
+            if inp is not None:
+                break
+            time.sleep(prompt_sleep)
+
         tui_ctx.print('')
         if inp == "":
-            login(tui_ctx, api)
+            login(process, tui_ctx, api)
             if api.accinfo():
                 return
         elif inp == "q":
             sys.exit()
         elif r := re.match(r"^(\d+)(r?)", inp):
             index = int(r.group(1))
-            if r.group(2) == "r":
+            if r.group(2) == "r":  # 重登逻辑
                 starts = relogin(tui_ctx, sessions[index], api)
                 if starts:
+                    process.phone = sessions[index].phone
                     return
             else:
                 ck = ck2dict(sessions[index].ck)
@@ -161,9 +215,14 @@ def select_session(tui_ctx: Console, sessions: list[SessionModule], api: ChaoXin
                     starts = relogin(tui_ctx, sessions[index], api)
                     if not starts:
                         continue
+                    else:
+                        process.phone = sessions[index].phone
+                else:
+                    process.phone = sessions[index].phone
                 return
 
-def select_class(tui_ctx: Console, classes: ClassContainer) -> str:
+
+def select_class(process, tui_ctx: Console, classes: ClassContainer) -> str:
     "交互-选择课程"
     tb = Table("序号", "课程名", "老师名", "课程id", "课程状态", title="所学的课程", border_style="blue")
     for index, cla in enumerate(classes.classes):
@@ -175,13 +234,32 @@ def select_class(tui_ctx: Console, classes: ClassContainer) -> str:
             Styled(cla.state.name, style="red" if cla.state == ClassStatus.已结课 else "green")
         )
     while True:
+
+        # 进入正式循环前首先判断该进程是否已经结束
+        if not process.alive:
+            process.exit()
+
         tui_ctx.print(tb)
-        command = Prompt.ask("请输入欲完成的课程 ([yellow]序号/名称/id[/]), 序号前加[yellow]\"EXAM|\"[/]进入考试模式, 输入 [yellow]q[/] 退出", console=tui_ctx)
+
+        # command = Prompt.ask(
+        #     "请输入欲完成的课程 ([yellow]序号/名称/id[/]), 序号前加[yellow]\"EXAM|\"[/]进入考试模式, 输入 [yellow]q[/] 退出",
+        #     console=tui_ctx)
+
+        while True:
+            # print(process.process_id, "等待输入")
+            command = chaoxing_web_prompt.ask(
+                "请输入欲完成的课程 ([yellow]序号/名称/id[/]), 序号前加[yellow]\"EXAM|\"[/]进入考试模式, 输入 [yellow]q[/] 退出",
+                console=tui_ctx)
+            if command is not None:
+                break
+            time.sleep(prompt_sleep)
+
         tui_ctx.print("")
         if command == "q":
             sys.exit()
         else:
             return command
+
 
 def select_exam(tui_ctx: Console, exams: list[ClassExamModule], api: ChaoXingAPI) -> tuple[ExamDto, bool]:
     """交互-选择考试
@@ -232,4 +310,3 @@ def select_exam(tui_ctx: Console, exams: list[ClassExamModule], api: ChaoXingAPI
                 enc_task=exams[exam_index].enc_task
             )
             return exam, export
-    

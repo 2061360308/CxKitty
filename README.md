@@ -1,5 +1,30 @@
 <div align="center">
-    <h1>超星学习通答题姬</h1>
+<h1>超星学习通答题姬(改)</h1><h3>服务器版</h3>
+</div>
+
+## ✨改写功能
+1. 添加多任务管理类，可多人多账号同时使用，一人分配一个子线程
+2. 添加网络接口，调用可以获取控制台输出或进行远程输入，可通过浏览器远程连接进行进度查看和操控
+3. 添加了一个简易的配套前端界面
+
+**总体概述**：这个版本的主要特点是可以放在服务器上运行，用户可以通过浏览器远程连接，实现查看进度和操控。
+可以实现多人多账号同时使用，每个用户一个子线程，不会相互影响。
+这种可手机、平板、电脑多端访问，远程挂机的方式很是方便。
+
+## 截图
+![img.png](imgs/demo5.png)
+![demo6.png](imgs/demo6.png)
+
+## 使用方法
+1. 安装依赖
+2. 运行app.py
+3. 访问http://address/index
+
+
+原项目介绍
+--------
+
+<div align="center">
     <h2>CxKitty</h2>
     <img alt="Github Stars" src="https://img.shields.io/github/stars/SocialSisterYi/CxKitty">
     <img alt="Github Forks" src="https://img.shields.io/github/forks/SocialSisterYi/CxKitty">
