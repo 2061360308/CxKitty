@@ -258,6 +258,7 @@ def select_class(process, tui_ctx: Console, classes: ClassContainer) -> str:
         if command == "q":
             sys.exit()
         else:
+            process.to_running()
             return command
 
 

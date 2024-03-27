@@ -155,6 +155,33 @@ class ChaoxingProcess:
         self.lay_session_notice = Layout(name="session_notice", size=6)
         self.lay_right.update(self.lay_right_content)
 
+    def to_running(self):
+        """
+        进入运行状态
+        Returns:
+
+        """
+        self.state = ChaoxingProcessState.RUNNING
+
+    def to_success(self):
+        """
+        进入成功状态
+        Returns:
+
+        """
+        self.state = ChaoxingProcessState.SUCCESS
+
+    def to_failed(self):
+        """
+        进入失败状态
+        Returns:
+
+        """
+        self.state = ChaoxingProcessState.Failed
+
+    def to_init(self):
+        self.state = ChaoxingProcessState.INIT
+
     @staticmethod
     def task_wait(tui_ctx: Layout, wait_sec: int, text: str):
         """课间等待, 防止风控"""
@@ -454,7 +481,7 @@ class ChaoxingProcess:
         # 会话存档为空
         else:
             self.console.print("[yellow]会话存档为空, 请登录账号")
-            dialog.login(self.console, self.api)
+            dialog.login(self, self.console, self.api)
         self.logger.info("\n-----*任务开始执行*-----")
         self.logger.info(f"Ver. {__version__}")
         dialog.accinfo(self.console, self.api)
@@ -546,7 +573,7 @@ class Multitasking:
     def create_process(self, process_id):
         process = ChaoxingProcess(process_id=process_id, web_mode=True)
         self.tasks.append(process)
-        thread = threading.Thread(target=self.threading_fun, args=(process,), name='Thread-'+process_id)
+        thread = threading.Thread(target=self.threading_fun, args=(process,), name='Thread-' + process_id)
         thread.start()
 
     def get_process(self, process_id):

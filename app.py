@@ -4,7 +4,8 @@ import time
 import uuid
 
 import uvicorn
-from starlette.responses import StreamingResponse, Response, HTMLResponse
+from starlette.responses import StreamingResponse, Response, HTMLResponse, RedirectResponse
+from starlette.staticfiles import StaticFiles
 
 from web.chaoxingWorker import Multitasking
 
@@ -24,6 +25,7 @@ app.add_middleware(
 )
 
 
+# 处理预检请求
 @app.options("/{rest_of_path:path}", include_in_schema=False)
 async def preflight_handler(rest_of_path: str):
     return Response(headers={
@@ -173,15 +175,14 @@ def test2():
     return {"status": "success", "namelist": namelist}
 
 
-with open("./web/index.html", "r", encoding='utf-8') as f:
-    index_html = f.read()
+@app.get("/")
+@app.get("/index")
+def read_root():
+    return RedirectResponse(url="/index.html")
 
 
-@app.get("/index", response_class=HTMLResponse)
-async def index():
-    global index_html
-    return index_html
-
+# 静态文件
+app.mount("/", app=StaticFiles(directory="web/static"), name="static")
 
 # 启动uvicorn服务，默认端口8000，main对应文件名
 if __name__ == '__main__':
