@@ -14,6 +14,10 @@
 可以实现多人多账号同时使用，每个用户一个子线程，不会相互影响。
 这种可手机、平板、电脑多端访问，远程挂机的方式很是方便。
 
+
+可以从这个项目查看我最新的工作，上述的具体实现可以在相关项目找到
+https://github.com/CXLite/CXLite/releases/tag/v0.0.1
+
 ## 截图
 ![img.png](imgs/demo5.png)
 ![demo6.png](imgs/demo6.png)
